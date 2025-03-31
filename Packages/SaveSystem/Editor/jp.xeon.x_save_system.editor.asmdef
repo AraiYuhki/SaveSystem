@@ -1,0 +1,16 @@
+{
+    "name": "jp.xeon.x_save_system.editor",
+    "rootNamespace": "",
+    "references": [
+        "GUID:2c4f6e14fdb8aac45ba68cde7252052f"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
