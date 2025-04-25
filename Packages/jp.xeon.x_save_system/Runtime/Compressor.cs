@@ -3,7 +3,7 @@ using System.IO.Compression;
 
 namespace Xeon.SaveSystem
 {
-    public class Compressor
+    public static class Compressor
     {
         public static byte[] Compress(byte[] rawData)
         {

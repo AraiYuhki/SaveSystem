@@ -11,16 +11,13 @@ namespace Xeon.SaveSystem
         private static DataBank instance = new DataBank();
         private static Dictionary<string, object> bank = new();
 
-        private const string path = "SaveData";
-        private const string extension = "dat";
-        private static readonly string fullPath = Path.Combine(Application.dataPath, "../", path);
-
-        public static bool IsEncrypt { get; set; }
-        public string SavePath => fullPath;
+        private XSaveSetting setting;
 
         private DataBank() { }
 
         public static DataBank Instance => instance;
+
+        public void SetSetting(XSaveSetting setting) => this.setting = setting;
 
         public bool IsEmpty() => bank.Count == 0;
 
@@ -36,7 +33,7 @@ namespace Xeon.SaveSystem
 
         private void CreateDirectoryIfNeed()
         {
-            var directory = new DirectoryInfo(fullPath);
+            var directory = new DirectoryInfo(setting.GetSaveDirectory());
             if (!directory.Exists) directory.Create();
         }
 
@@ -51,10 +48,10 @@ namespace Xeon.SaveSystem
         {
             if (!ExistsKey(key)) return false;
             CreateDirectoryIfNeed();
-            var filePath = $"{fullPath}/{key}.{extension}";
+            var filePath = setting.GetFullPath(key);
 
             var json = JsonUtility.ToJson(bank[key]);
-            if (!IsEncrypt)
+            if (!setting.IsEncrypt)
             {
                 using (var sw = new StreamWriter(filePath, false))
                     sw.Write(json);
@@ -62,10 +59,9 @@ namespace Xeon.SaveSystem
             }
             var data = Encoding.UTF8.GetBytes(json);
             data = Compressor.Compress(data);
-            data = Cryptor.Encrypt(data);
+            data = Cryptor.Encrypt(data, setting);
 
-            if (!Directory.Exists(fullPath))
-                Directory.CreateDirectory(fullPath);
+            CreateDirectoryIfNeed();
 
             using (var fileStream = File.Create(filePath))
                 fileStream.Write(data, 0, data.Length);
@@ -73,18 +69,18 @@ namespace Xeon.SaveSystem
             return true;
         }
 
-        public bool Load<DataType>(string key)
+        public bool Load<T>(string key) where T : class, new()
         {
-            var filePath = $"{fullPath}/{key}.{extension}";
+            var filePath = setting.GetFullPath(key);
 
             if (!File.Exists(filePath)) return false;
 
-            if (!IsEncrypt)
+            if (!setting.IsEncrypt)
             {
                 using (var streamReader = new StreamReader(filePath, Encoding.UTF8))
                 {
                     var text = streamReader.ReadToEnd();
-                    bank[key] = JsonUtility.FromJson<DataType>(text);
+                    bank[key] = JsonUtility.FromJson<T>(text);
                     return true;
                 }
             }
@@ -96,23 +92,23 @@ namespace Xeon.SaveSystem
                 fileStream.Read(data, 0, data.Length);
             }
 
-            data = Cryptor.Decrypt(data);
+            data = Cryptor.Decrypt(data, setting);
             data = Compressor.Decompress(data);
 
             var json = Encoding.UTF8.GetString(data);
 
-            bank[key] = JsonUtility.FromJson<DataType>(json);
+            bank[key] = JsonUtility.FromJson<T>(json);
 
             return true;
         }
 
-        public T GetOrCreate<T>(string key, Func<T> createFunc = null) where T : new()
+        public T GetOrCreate<T>(string key, Func<T> createFunc = null) where T : class, new()
         {
             Load<T>(key);
             return Get<T>(key) ?? Create(key, createFunc);
         }
 
-        private T Create<T>(string key, Func<T> createFunc = null) where T : new()
+        private T Create<T>(string key, Func<T> createFunc = null) where T : class, new()
         {
             var instance = createFunc == null ? new T() : createFunc();
             Store(key, instance);
@@ -120,7 +116,7 @@ namespace Xeon.SaveSystem
             return instance;
         }
 
-        public void LoadOrCreate<T>(string key, Func<T> createFunc = null) where T : new()
+        public void LoadOrCreate<T>(string key, Func<T> createFunc = null) where T : class, new()
         {
             if (!Load<T>(key))
             {
@@ -131,13 +127,13 @@ namespace Xeon.SaveSystem
 
         public bool ExistSaveFile(string key)
         {
-            var filePath = $"{fullPath}/{key}.{extension}";
+            var filePath = setting.GetFullPath(key);
             return File.Exists(filePath);
         }
 
         public void DeleteSaveFile(string key)
         {
-            var filePath = $"{fullPath}/{key}.{extension}";
+            var filePath = setting.GetFullPath(key);
             if (!ExistSaveFile(key)) return;
             File.Delete(filePath);
         }

@@ -4,14 +4,13 @@ using System.Text;
 
 namespace Xeon.SaveSystem
 {
-    public class Cryptor
+    public static class Cryptor
     {
         private const int KeySize = 256;
         private const int BlockSize = 128;
-        private const string EncryptionKey = "0123456789ABCDEFGHIJKLMNOPQRSTUV";
-        private const string EncryptionIV = "0123456789ABCDEF";
 
-        public static byte[] Encrypt(byte[] rawData) => Encrypt(rawData, EncryptionKey, EncryptionIV);
+        public static byte[] Encrypt(byte[] rawData, XSaveSetting setting)
+            => Encrypt(rawData, setting.EncryptionKey, setting.EncryptionIV);
 
         public static byte[] Encrypt(byte[] rawData, string key, string iv)
         {
@@ -30,7 +29,8 @@ namespace Xeon.SaveSystem
             }
         }
 
-        public static byte[] Decrypt(byte[] encryptedData) => Decrypt(encryptedData, EncryptionKey, EncryptionIV);
+        public static byte[] Decrypt(byte[] encryptedData, XSaveSetting setting)
+            => Decrypt(encryptedData, setting.EncryptionKey, setting.EncryptionIV);
 
         public static byte[] Decrypt(byte[] encryptedData, string key, string iv)
         {
